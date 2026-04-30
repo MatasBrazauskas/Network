@@ -1,10 +1,13 @@
-CFLAGS= -g -Wall -Werror -pedantic -lcjson -lcurl
-FILE=main.c
-CC=gcc
-TARGET=main
+CC = gcc
 
-all: $(FILE)
-	$(CC) $(FILE) -o $(TARGET) $(CFLAGS) 
+CFLAGS = -g -Wall -Wextra -pedantic
+LDLIBS = -lcjson -lcurl
 
-gdb: $(FILE)
-	gdb -tui ./$(TARGET)
+SRC = main.c src/*.c
+TARGET = main
+
+all:
+	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDLIBS)
+
+clean:
+	rm -f $(TARGET)
