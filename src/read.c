@@ -2,7 +2,6 @@
 
 #include "curl/curl.h"
 
-#include <getopt.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -11,23 +10,14 @@
 
 Flags readArgs(int argc, char** argv) {
     Flags flags = 0;
-    const struct option longOptions[] = {
-        {"location", no_argument, NULL, 'a'},
-        {"request", no_argument, NULL, 'b'},
-        {"response", no_argument, NULL, 'c'},
-        {"localBest", no_argument, NULL, 'd'},
-        {"currLocation", no_argument, NULL, 'e'},
-        {0,0,0,0}
-    };
 
-    int val, index;
-    while ((val = getopt_long(argc, argv, "", longOptions, &index)) != -1) {
+    char val;
+    while ((val = getopt(argc, argv, "ls:")) != -1) {
         switch (val) {
-            case 'a': printf("Location\n"); break;
-            case 'b': printf("Request\n"); break;
-            case 'c': printf("Response\n"); break;
-            case 'd': printf("Local Best\n"); break;
-            case 'e': printf("Curr Location\n"); break;
+            case 'l':
+                printf("Location: %s\n", optarg);
+            case 's':
+                printf("Server: %s\n", optarg);
             default:
                 printf("Unknown flag");
                 break;
@@ -62,18 +52,18 @@ cJSON* readJSON(const char* t_path) {
 
     cJSON* json = cJSON_ParseWithLength(mappedFile, fileSize);
 
-    close(fd);
     munmap(mappedFile, fileSize);
+    close(fd);
 
     return json;
 }
 
-Data* getData(const cJSON* t_server) {
-    const cJSON* country = cJSON_GetObjectItemCaseSensitive(t_server, "country");
-    const cJSON* city = cJSON_GetObjectItemCaseSensitive(t_server, "city");
-    const cJSON* provider = cJSON_GetObjectItemCaseSensitive(t_server, "provider");
-    const cJSON* host = cJSON_GetObjectItemCaseSensitive(t_server, "host");
-    const cJSON* id = cJSON_GetObjectItemCaseSensitive(t_server, "id");
+Data *getData(const cJSON *t_server) {
+    const cJSON *country = cJSON_GetObjectItemCaseSensitive(t_server, "country");
+    const cJSON *city = cJSON_GetObjectItemCaseSensitive(t_server, "city");
+    const cJSON *provider = cJSON_GetObjectItemCaseSensitive(t_server, "provider");
+    const cJSON *host = cJSON_GetObjectItemCaseSensitive(t_server, "host");
+    const cJSON *id = cJSON_GetObjectItemCaseSensitive(t_server, "id");
 
     if(!cJSON_IsString(country)) {
         return NULL;
@@ -97,6 +87,10 @@ Data* getData(const cJSON* t_server) {
 
     Data* data = malloc(sizeof(Data));
 
+    if (data == NULL) {
+         return NULL;
+    }
+
     data->country = country->valuestring;
     data->city = city->valuestring;
     data->provider = provider->valuestring;
@@ -104,4 +98,12 @@ Data* getData(const cJSON* t_server) {
     data->id = id->valueint;
 
     return data;
+}
+
+bool noArgsFlagValid(char t_letter) {
+    return false;
+}
+
+bool ArgsFlagValid(char t_letter) {
+    return false;
 }
