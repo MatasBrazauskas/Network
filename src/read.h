@@ -16,13 +16,33 @@ typedef struct {
     int id;
 } Data;
 
-typedef int Flags;
+typedef struct {
+    int serverId;
+    bool downloadData;
+} Download;
 
-Flags readArgs(int argc, char** argv);
+typedef struct {
+    int serverId;
+    bool sendData;
+} Send;
+
+typedef struct {
+    char *seachCountry;
+} BestLocation;
+
+typedef struct {
+    bool getCurrLocation;
+} CurrLocation;
+
+typedef struct {
+    Download download;
+    Send send;
+    BestLocation bestLocation;
+    CurrLocation currLocation;
+} Config;
+
+Config readArgs(int argc, char** argv);
 cJSON* readJSON(const char* t_path);
 Data* getData(const cJSON* t_server);
-
-bool noArgsFlagValid(char);
-bool ArgsFlagValid(char);
 
 #endif //NETWORK_READ_H

@@ -8,23 +8,62 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-Flags readArgs(int argc, char** argv) {
-    Flags flags = 0;
+Config readArgs(int argc, char** argv) {
+    Config config = {0};
 
+    bool passedArguments = false;
     char val;
-    while ((val = getopt(argc, argv, "ls:")) != -1) {
+    while ((val = getopt(argc, argv, "s::d::l:c")) != -1) {
         switch (val) {
-            case 'l':
-                printf("Location: %s\n", optarg);
             case 's':
-                printf("Server: %s\n", optarg);
+                if (optarg != NULL) {
+                    const int serverId = atoi(optarg);
+                    if (serverId == 0) {
+                        printf("Invalid server id\n");
+                        break;
+                    }
+                    config.send.serverId = serverId;
+                }
+                passedArguments = true;
+                config.send.sendData = true;
+                break;
+            case 'd':
+                if (optarg != NULL) {
+                    const int serverId = atoi(optarg);
+                    if (serverId == 0) {
+                        printf("Invalid server id\n");
+                        break;
+                    }
+                    config.download.serverId = serverId;
+                }
+                passedArguments = true;
+                config.download.downloadData = true;
+                break;
+            case 'l':
+                passedArguments = true;
+                config.bestLocation.seachCountry = optarg;
+            case 'c':
+                passedArguments = true;
+                config.currLocation.getCurrLocation = true;
             default:
-                printf("Unknown flag");
+                printf("Unknown flag: %c\n", val);
                 break;
         }
     }
 
-    return flags;
+    if (!passedArguments) {
+        config.download.serverId = INT_MIN;
+        config.download.downloadData = true;
+
+        config.send.serverId = INT_MIN;
+        config.download.serverId = true;
+
+        config.bestLocation.seachCountry = NULL;
+
+        config.currLocation.getCurrLocation = true;
+    }
+
+    return config;
 }
 
 cJSON* readJSON(const char* t_path) {
