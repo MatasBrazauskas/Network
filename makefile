@@ -3,14 +3,17 @@ CC = gcc
 CFLAGS = -g -Wall -Wextra -pedantic -O3
 LDLIBS = -lcjson -lcurl
 
-SRC = main.c src/*.c
+SRC = src/*.c
 TARGET = main
 
 all:
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDLIBS)
 
-gdb:
-	gdb -tui ./main
+gdb: $(TARGET)
+	gdb -tui ./$(TARGET)
 
-clean:
+clean: $(TARGET)
 	rm -f $(TARGET)
+
+memLeak: $(TARGET)
+	valgrind --leak-check=full --verbose --track-origins=yes --show-leak-kinds=all ./$(TARGET)

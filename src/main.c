@@ -2,14 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "src/read.h"
-#include "src/helper.h"
-#include "src/utils.h"
+#include "config.h"
+#include "curlUtils.h"
+#include "utils.h"
+#include "jsonUtils.h"
 
 int main(const int argc, char** argv) {
-	ReadArgs(argc, argv);
+	readArgs(argc, argv);
 
-	cJSON *json = ReadJSON(DATA_FILE);
+	cJSON *json = readJSON(DATA_FILE);
 	if (!validJSON(json)) {
 		printf("Invalid JSON\n");
 		abort();
@@ -22,20 +23,22 @@ int main(const int argc, char** argv) {
 	}
 
 
-	const long ten_mb =10 * 1024 * 1024;
-	char *mb_of_chars = malloc(sizeof(char) * ten_mb);
-	memset(mb_of_chars, 'A', ten_mb);
+	const long ten_mb = 1024 * 1024;
+	char ten_mb_of_char[ten_mb];
+	memset(ten_mb_of_char, 'A', ten_mb);
+
+	UploadData upload = {.data = ten_mb_of_char, .size = ten_mb, .sent = 0,};
 
 	{
 		cJSON* server = NULL;
 		cJSON_ArrayForEach(server, json) {
 
-			Data *data = GetData(server);
+			Data *data = getData(server);
 			if (data == NULL) {
 				continue;
 			}
 
-			CURL* curl = createCurl(data->host);
+			CURL* curl = createCurl();
 			if (curl == NULL) {
 				freeUpData(data);
 				cleanUpCurl(curl);
@@ -44,19 +47,21 @@ int main(const int argc, char** argv) {
 
 			printf("%s, %s, %s, %s, %d\n", data->country, data->city, data->provider, data->host, data->id);
 
-			const double download_mbps = downloadSpeed(curl);
-			if (download_mbps == 0.0f) {
+			const double download_mbps = downloadSpeed(curl, data->host);
+			if (download_mbps == 0.0F) {
 				freeUpData(data);
 				cleanUpCurl(curl);
 				continue;
 			}
 			printf("Download Mbs per second: %f\n", download_mbps);
 
-			UploadData upload = {
-				.data = mb_of_chars,
-				.size = ten_mb,
-				.sent = 0,
-			};
+
+			curl = createCurl();
+			if (curl == NULL) {
+				freeUpData(data);
+				cleanUpCurl(curl);
+				continue;
+			}
 
 			const double upload_mbps = uploadSpeed(curl, &upload, data->host);
 			if (upload_mbps == 0.0f) {
@@ -72,7 +77,5 @@ int main(const int argc, char** argv) {
 		}
 	}
 
-
-	free(mb_of_chars);
 	cleanUpJSON(json);
 }

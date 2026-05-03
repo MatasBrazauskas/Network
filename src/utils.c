@@ -19,10 +19,22 @@ static char *createUrl(const char *t_url, const char *t_path) {
     return url;
 }
 
+char *createDownloadUrl(const char *t_url) {
+    return createUrl(t_url, downloadUrl);
+}
+
 char *createUploadUrl(const char *t_url) {
     return createUrl(t_url, uploadUrl);
 }
 
-char *createDownloadUrl(const char *t_url) {
-    return createUrl(t_url, downloadUrl);
+void freeUpData(Data *t_data) {
+    free(t_data->country);
+    free(t_data->city);
+    free(t_data->provider);
+    free(t_data->host);
+    free(t_data);
+}
+
+void cleanUpJSON(cJSON *t_json) {
+    cJSON_Delete(t_json);
 }
