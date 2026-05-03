@@ -1,12 +1,11 @@
-#ifndef NETWORK_READ_H
-#define NETWORK_READ_H
+#pragma once
 
 #include <stdbool.h>
 
 #include "cjson/cJSON.h"
 
-#define DATA_FILE "speedtest_server_list.json"
-//#define DATA_FILE "temp.json"
+//#define DATA_FILE "speedtest_server_list.json"
+#define DATA_FILE "temp.json"
 
 typedef struct {
     char* country;
@@ -41,8 +40,6 @@ typedef struct {
     CurrLocation currLocation;
 } Config;
 
-Config readArgs(int argc, char** argv);
-cJSON* readJSON(const char* t_path);
-Data* getData(const cJSON* t_server);
-
-#endif //NETWORK_READ_H
+Config ReadArgs(int argc, char** argv);
+cJSON* ReadJSON(const char* t_path);
+Data* GetData(const cJSON* t_server);

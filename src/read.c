@@ -138,11 +138,3 @@ Data *getData(const cJSON *t_server) {
 
     return data;
 }
-
-bool noArgsFlagValid(char t_letter) {
-    return false;
-}
-
-bool ArgsFlagValid(char t_letter) {
-    return false;
-}
