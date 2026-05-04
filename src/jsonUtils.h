@@ -12,9 +12,17 @@ typedef struct {
     int id;
 } Data;
 
-cJSON* readJSON(const char* t_path);
-bool validJSON(const cJSON* t_json);
-void cleanUpJSON(cJSON *t_json);
+typedef struct {
+    char *status;
+    char *country;
+} Location;
 
-Data* getData(const cJSON* t_server);
+cJSON* readServersJson();
+bool validJsonArray(const cJSON *t_json);
+void cleanUpJson(cJSON *t_json);
+
+Data* getServerData(const cJSON* t_server);
 void freeUpData(Data *t_data);
+
+Location *getLocationData(const char *t_locationStr);
+void freeUpLocationData(Location *t_data);

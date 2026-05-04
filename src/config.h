@@ -2,11 +2,6 @@
 
 #include <stdbool.h>
 
-#include "cjson/cJSON.h"
-
-//#define DATA_FILE "data/speedtest_server_list.json"
-#define DATA_FILE "data/temp.json"
-
 enum Operation {None, AllServers, SingleServer};
 enum LocationType{ NoCountry, CurrentLocation, ProvidedLocation};
 

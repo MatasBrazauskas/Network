@@ -1,14 +1,15 @@
 #include "curlUtils.h"
+#include "jsonUtils.h"
 
 #include <curl/curl.h>
-#include "utils.h"
+
 
 #include <stdlib.h>
 #include <string.h>
 
-static const char locationApiUrl[] = "http://ip-api.com/json/?fields=status,country";
-static const char downloadUrl[] = "http://%s/speedtest/random1000x1000.jpg";
-static const char uploadUrl[] = "http://%s/speedtest/upload.php";
+static const char LocationUrl[] = "http://ip-api.com/json/?fields=status,country";
+static const char DownloadUrl[] = "http://%s/speedtest/random1000x1000.jpg";
+static const char UploadUrl[] = "http://%s/speedtest/upload.php";
 
 static char *createUrl(const char *t_url, const char *t_path) {
     int length = snprintf(NULL, 0, t_path, t_url);
@@ -26,12 +27,22 @@ static char *createUrl(const char *t_url, const char *t_path) {
     return url;
 }
 
-char *createDownloadUrl(const char *t_url) {
-    return createUrl(t_url, downloadUrl);
-}
+static size_t locationWriteCallback(void *t_buffer, size_t t_size, size_t t_nmemb, void *t_userData) {
+    char **locationJson = t_userData;
+    const size_t bytes = t_size * t_nmemb;
 
-char *createUploadUrl(const char *t_url) {
-    return createUrl(t_url, uploadUrl);
+    char *response = malloc((bytes + 1) * sizeof(char));
+
+    if (response == NULL) {
+        return 0;
+    }
+
+    memcpy(response, t_buffer, bytes);
+    response[bytes] = 0;
+
+    *locationJson = response;
+
+    return bytes;
 }
 
 static size_t writeCallback(char *t_buffer, size_t t_size, size_t t_nmemb, void *t_userData) {
@@ -58,44 +69,127 @@ static size_t readCallback(char *t_buffer, size_t t_size, size_t t_nitems, void 
 }
 
 
-CURLcode curlGlobalInit(void) {
-    return curl_global_init(CURL_GLOBAL_DEFAULT);
-}
-
-CURL *createCurl(void) {
+CURL *createLocationCurl() {
     CURL* t_curl = curl_easy_init();
 
     if (t_curl == NULL) {
         return NULL;
     }
 
+    const char *url =  LocationUrl;
+
+    curl_easy_setopt(t_curl, CURLOPT_URL, url);
+    curl_easy_setopt(t_curl, CURLOPT_URL, LocationUrl);
+    curl_easy_setopt(t_curl,CURLOPT_TIMEOUT, 10L);
+    curl_easy_setopt(t_curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(t_curl, CURLOPT_USERAGENT, CHKSPEED_VERSION);
+    curl_easy_setopt(t_curl, CURLOPT_WRITEFUNCTION, locationWriteCallback);
+
+    return t_curl;
+}
+
+CURL *createDownloadCurl(const char *t_path) {
+    CURL* t_curl = curl_easy_init();
+
+    if (t_curl == NULL) {
+        return NULL;
+    }
+
+    char *url = createUrl(t_path, DownloadUrl);
+
+    if (url == NULL) {
+        return NULL;
+    }
+
+    curl_easy_setopt(t_curl, CURLOPT_URL, url);
     curl_easy_setopt(t_curl,CURLOPT_TIMEOUT, 15L);
     curl_easy_setopt(t_curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(t_curl, CURLOPT_CONNECTTIMEOUT, 5L);
     curl_easy_setopt(t_curl, CURLOPT_USERAGENT, CHKSPEED_VERSION);
+    curl_easy_setopt(t_curl, CURLOPT_WRITEFUNCTION, writeCallback);
+
+    free(url);
 
     return t_curl;
+}
+
+CURL *createUploadCurl(const char *t_path) {
+    CURL* t_curl = curl_easy_init();
+
+    if (t_curl == NULL) {
+        return NULL;
+    }
+
+    char *url = createUrl(t_path, UploadUrl);
+
+    if (url == NULL) {
+        return NULL;
+    }
+
+    curl_easy_setopt(t_curl, CURLOPT_URL, url);
+    curl_easy_setopt(t_curl,CURLOPT_TIMEOUT, 15L);
+    curl_easy_setopt(t_curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(t_curl, CURLOPT_CONNECTTIMEOUT, 5L);
+    curl_easy_setopt(t_curl, CURLOPT_USERAGENT, CHKSPEED_VERSION);
+    curl_easy_setopt(t_curl, CURLOPT_READFUNCTION, readCallback);
+    curl_easy_setopt(t_curl, CURLOPT_POST, 1L);
+
+    free(url);
+
+    return t_curl;
+}
+
+CURLcode curlGlobalInit(void) {
+    return curl_global_init(CURL_GLOBAL_DEFAULT);
 }
 
 void cleanUpCurl(CURL* t_curl) {
     curl_easy_cleanup(t_curl);
 }
 
-double downloadSpeed(CURL *t_curl, const char *t_path) {
-    char *url = createDownloadUrl(t_path);
-
-    if (url == NULL) {
-        printf("URL is null\n");
-        return 0.0;
+char *getCurrLocation(CURL *t_curl) {
+    if (t_curl == NULL) {
+        return NULL;
     }
 
-    printf("%s\n", url);
+    char *locationJson = NULL;
 
-    curl_easy_setopt(t_curl, CURLOPT_URL, url);
-    curl_easy_setopt(t_curl, CURLOPT_WRITEFUNCTION, writeCallback);
+    curl_easy_setopt(t_curl, CURLOPT_WRITEDATA, &locationJson);
 
     const CURLcode code = curl_easy_perform(t_curl);
-    free(url);
+
+    if (code != CURLE_OK) {
+        printf("CURL is not OK\n");
+        return NULL;
+    }
+
+    Location *location = getLocationData(locationJson);
+
+    if (location == NULL) {
+        return NULL;
+    }
+
+    if (strcmp(location->status, "success") != 0) {
+        return NULL;
+    }
+
+    const int countryNameLen = strlen(location->country);
+    char *country = malloc(countryNameLen + 1);
+
+    if (country == NULL) {
+        return NULL;
+    }
+
+    memcpy(country, location->country, countryNameLen);
+    country[countryNameLen] = 0;
+    
+    freeUpLocationData(location);
+
+    return country;
+}
+
+double downloadSpeed(CURL *t_curl) {
+    const CURLcode code = curl_easy_perform(t_curl);
 
     if (code != CURLE_OK) {
         printf("CURL is not OK\n");
@@ -113,16 +207,8 @@ double downloadSpeed(CURL *t_curl, const char *t_path) {
     return mbps;
 }
 
-double uploadSpeed(CURL *t_curl, UploadData *t_uploadData, const char *t_path) {
-    const char *url = createUploadUrl(t_path);
-
-    printf("%s\n", url);
-
-    curl_easy_setopt(t_curl, CURLOPT_URL, url);
-    curl_easy_setopt(t_curl, CURLOPT_READFUNCTION, readCallback);
+double uploadSpeed(CURL *t_curl, UploadData *t_uploadData) {
     curl_easy_setopt(t_curl, CURLOPT_READDATA, t_uploadData);
-
-    curl_easy_setopt(t_curl, CURLOPT_POST, 1L);
     curl_easy_setopt(t_curl, CURLOPT_POSTFIELDSIZE, (long)t_uploadData->size);
 
     if (curl_easy_perform(t_curl) != CURLE_OK) {

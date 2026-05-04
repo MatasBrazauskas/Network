@@ -2,10 +2,9 @@
 
 #include "curl/curl.h"
 
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
+
 
 Config readArgs(int argc, char** argv) {
     Config config = {0};

@@ -10,9 +10,17 @@ typedef struct {
     size_t sent;
 } UploadData;
 
+char *createDownloadUrl(const char *t_url);
+char *createUploadUrl(const char *t_url);
+
 CURLcode curlGlobalInit(void);
-CURL *createCurl(void);
+
+CURL *createLocationCurl();
+CURL *createDownloadCurl(const char *t_path);
+CURL *createUploadCurl(const char *t_path);
+
 void cleanUpCurl(CURL* t_curl);
 
-double downloadSpeed(CURL *t_curl, const char *t_path);
-double uploadSpeed(CURL *t_curl, UploadData *t_uploadData, const char *t_path);
+char *getCurrLocation(CURL *t_curl);
+double downloadSpeed(CURL *t_curl);
+double uploadSpeed(CURL *t_curl, UploadData *t_uploadData);

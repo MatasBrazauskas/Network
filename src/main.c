@@ -4,14 +4,13 @@
 
 #include "config.h"
 #include "curlUtils.h"
-#include "utils.h"
 #include "jsonUtils.h"
 
 int main(const int argc, char** argv) {
 	readArgs(argc, argv);
 
-	cJSON *json = readJSON(DATA_FILE);
-	if (!validJSON(json)) {
+	cJSON *json = readServersJson();
+	if (!validJsonArray(json)) {
 		printf("Invalid JSON\n");
 		abort();
 	}
@@ -29,53 +28,56 @@ int main(const int argc, char** argv) {
 
 	UploadData upload = {.data = ten_mb_of_char, .size = ten_mb, .sent = 0,};
 
+	CURL *locationCurl = createLocationCurl();
+
+	if (locationCurl == NULL) {
+		exit(67);
+	}
+
+	const char *currLocation = getCurrLocation(locationCurl);
+	printf("%s\n", currLocation);
+
 	{
 		cJSON* server = NULL;
 		cJSON_ArrayForEach(server, json) {
 
-			Data *data = getData(server);
+			Data *data = getServerData(server);
 			if (data == NULL) {
 				continue;
 			}
 
-			CURL* curl = createCurl();
-			if (curl == NULL) {
-				freeUpData(data);
-				cleanUpCurl(curl);
+
+			CURL* downloadCurl = createDownloadCurl(data->host);
+			if (downloadCurl == NULL) {
 				continue;
 			}
 
 			printf("%s, %s, %s, %s, %d\n", data->country, data->city, data->provider, data->host, data->id);
 
-			const double download_mbps = downloadSpeed(curl, data->host);
+			const double download_mbps = downloadSpeed(downloadCurl);
 			if (download_mbps == 0.0F) {
-				freeUpData(data);
-				cleanUpCurl(curl);
 				continue;
 			}
 			printf("Download Mbs per second: %f\n", download_mbps);
 
 
-			curl = createCurl();
-			if (curl == NULL) {
-				freeUpData(data);
-				cleanUpCurl(curl);
+			CURL *uploadCurl = createUploadCurl(data->host);
+			if (uploadCurl == NULL) {
 				continue;
 			}
 
-			const double upload_mbps = uploadSpeed(curl, &upload, data->host);
+			const double upload_mbps = uploadSpeed(uploadCurl, &upload);
 			if (upload_mbps == 0.0f) {
-				freeUpData(data);
-				cleanUpCurl(curl);
 				continue;
 			}
 
 			printf("Upload Mbs per second: %f\n", upload_mbps);
 
 			freeUpData(data);
-			cleanUpCurl(curl);
+			cleanUpCurl(downloadCurl);
+			cleanUpCurl(uploadCurl);
 		}
 	}
 
-	cleanUpJSON(json);
+	cleanUpJson(json);
 }

@@ -7,8 +7,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-cJSON* readJSON(const char* t_path) {
-    const int fd = open(t_path, O_RDONLY);
+//static const char Path[] = "data/speedtest_server_list.json"
+static const char Path[] =  "data/temp.json";
+
+cJSON *readServersJson() {
+    const int fd = open(Path, O_RDONLY);
 
     if(fd == -1) {
         perror("Cant open file");
@@ -38,7 +41,7 @@ cJSON* readJSON(const char* t_path) {
     return json;
 }
 
-Data *getData(const cJSON *t_server) {
+Data *getServerData(const cJSON *t_server) {
     const cJSON *country = cJSON_GetObjectItemCaseSensitive(t_server, "country");
     const cJSON *city = cJSON_GetObjectItemCaseSensitive(t_server, "city");
     const cJSON *provider = cJSON_GetObjectItemCaseSensitive(t_server, "provider");
@@ -80,7 +83,7 @@ Data *getData(const cJSON *t_server) {
     return data;
 }
 
-bool validJSON(const cJSON* t_json) {
+bool validJsonArray(const cJSON *t_json) {
     if(t_json == NULL) {
         return false;
     }
@@ -88,14 +91,46 @@ bool validJSON(const cJSON* t_json) {
     return cJSON_IsArray(t_json);
 }
 
-void freeUpData(Data *t_data) {
-    free(t_data->country);
-    free(t_data->city);
-    free(t_data->provider);
-    free(t_data->host);
-    free(t_data);
+void cleanUpJson(cJSON *t_json) {
+    cJSON_Delete(t_json);
+
+    t_json = NULL;
 }
 
-void cleanUpJSON(cJSON *t_json) {
-    cJSON_Delete(t_json);
+void freeUpData(Data *t_data) {
+    free(t_data);
+
+    t_data = NULL;
+}
+
+Location *getLocationData(const char *t_locationStr) {
+    const cJSON* json = cJSON_Parse(t_locationStr);
+
+    const cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
+    const cJSON *country = cJSON_GetObjectItemCaseSensitive(json, "country");
+
+    if (!cJSON_IsString(status)) {
+        return NULL;
+    }
+
+    if (!cJSON_IsString(country)) {
+        return NULL;
+    }
+
+    Location *location = malloc(sizeof(Location));
+    if (location == NULL) {
+        return NULL;
+    }
+
+    location->status = status->valuestring;
+    location->country = country->valuestring;
+
+    return location;
+}
+
+void freeUpLocationData(Location *t_data) {
+    free(t_data->status);
+    free(t_data->country);
+
+    t_data = NULL;
 }
