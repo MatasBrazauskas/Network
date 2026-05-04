@@ -3,7 +3,6 @@
 
 #include <curl/curl.h>
 
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -53,7 +52,7 @@ static size_t writeCallback(char *t_buffer, size_t t_size, size_t t_nmemb, void 
 }
 
 static size_t readCallback(char *t_buffer, size_t t_size, size_t t_nitems, void *t_userdata) {
-    UploadData *upload = t_userdata;
+    MegaByteOfData *upload = t_userdata;
 
     const size_t maxBytes = t_size * t_nitems;
     const size_t remaining = upload->size - upload->sent;
@@ -159,7 +158,6 @@ char *getCurrLocation(CURL *t_curl) {
     const CURLcode code = curl_easy_perform(t_curl);
 
     if (code != CURLE_OK) {
-        printf("CURL is not OK\n");
         return NULL;
     }
 
@@ -182,7 +180,7 @@ char *getCurrLocation(CURL *t_curl) {
 
     memcpy(country, location->country, countryNameLen);
     country[countryNameLen] = 0;
-    
+
     freeUpLocationData(location);
 
     return country;
@@ -192,7 +190,6 @@ double downloadSpeed(CURL *t_curl) {
     const CURLcode code = curl_easy_perform(t_curl);
 
     if (code != CURLE_OK) {
-        printf("CURL is not OK\n");
         return 0.0;
     }
 
@@ -207,12 +204,11 @@ double downloadSpeed(CURL *t_curl) {
     return mbps;
 }
 
-double uploadSpeed(CURL *t_curl, UploadData *t_uploadData) {
-    curl_easy_setopt(t_curl, CURLOPT_READDATA, t_uploadData);
+double uploadSpeed(CURL *t_curl, MegaByteOfData *t_uploadData) {
+    curl_easy_setopt(t_curl, CURLOPT_READDATA, &t_uploadData);
     curl_easy_setopt(t_curl, CURLOPT_POSTFIELDSIZE, (long)t_uploadData->size);
 
     if (curl_easy_perform(t_curl) != CURLE_OK) {
-        printf("CURL is not OK\n");
         return 0.0;
     }
 

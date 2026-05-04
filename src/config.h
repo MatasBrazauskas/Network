@@ -1,6 +1,13 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
+
+typedef struct {
+    char *data;
+    size_t size;
+    size_t sent;
+} MegaByteOfData;
 
 enum Operation {None, AllServers, SingleServer};
 enum LocationType{ NoCountry, CurrentLocation, ProvidedLocation};
@@ -9,7 +16,7 @@ typedef struct {
     enum Operation downloadOperation;
     int serverId;
 
-    enum Operation sendOperation;
+    enum Operation uploadOperation;
     int clientId;
 
     enum LocationType locationType;
@@ -18,4 +25,5 @@ typedef struct {
     bool getCurrentLocation;
 } Config;
 
-Config readArgs(int argc, char** argv);
+Config createConfig(int argc, char** argv, const char *t_currentCountry);
+MegaByteOfData *createMegaByteOfData();

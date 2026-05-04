@@ -7,35 +7,50 @@
 #include "jsonUtils.h"
 
 int main(const int argc, char** argv) {
-	readArgs(argc, argv);
 
 	cJSON *json = readServersJson();
 	if (!validJsonArray(json)) {
-		printf("Invalid JSON\n");
-		abort();
+		printf("Invalid JSON, can't start programme.\n");
+		return 1;
 	}
 
 	const CURLcode init_code = curlGlobalInit();
 	if (init_code != CURLE_OK) {
-		printf("Something wrong with CURL\n");
-		abort();
+		printf("Can't initialize global CURL.\n");
+		return 1;
 	}
 
+	const MegaByteOfData *megaByteOfData = createMegaByteOfData();
+	if (megaByteOfData == NULL) {
+		printf("Can't create a heap memory of 1MB");
+	}
 
-	const long ten_mb = 1024 * 1024;
-	char ten_mb_of_char[ten_mb];
-	memset(ten_mb_of_char, 'A', ten_mb);
-
-	UploadData upload = {.data = ten_mb_of_char, .size = ten_mb, .sent = 0,};
-
+	char *currentLocation = NULL;
 	CURL *locationCurl = createLocationCurl();
 
-	if (locationCurl == NULL) {
-		exit(67);
+	if (locationCurl != NULL) {
+		currentLocation = getCurrLocation(locationCurl);
+
+		if (currentLocation == NULL) {
+			printf("Some problem getting the user location.\n");
+		} else {
+			printf("Current user location: %s.\n", currentLocation);
+		}
+	} else {
+		printf("Can't initialize CURL for connection with location API.\n");
 	}
 
-	const char *currLocation = getCurrLocation(locationCurl);
-	printf("%s\n", currLocation);
+	cleanUpCurl(locationCurl);
+
+	Config config = createConfig(argc, argv, currentLocation);
+
+	printf("%d\n", config.downloadOperation);
+	printf("%d\n", config.serverId);
+	printf("%d\n", config.uploadOperation);
+	printf("%d\n", config.clientId);
+	printf("%d\n", config.locationType);
+	printf("%s\n", config.searchCountry);
+	printf("%d\n", config.getCurrentLocation);
 
 	{
 		cJSON* server = NULL;
@@ -45,7 +60,6 @@ int main(const int argc, char** argv) {
 			if (data == NULL) {
 				continue;
 			}
-
 
 			CURL* downloadCurl = createDownloadCurl(data->host);
 			if (downloadCurl == NULL) {
@@ -66,7 +80,7 @@ int main(const int argc, char** argv) {
 				continue;
 			}
 
-			const double upload_mbps = uploadSpeed(uploadCurl, &upload);
+			const double upload_mbps = uploadSpeed(uploadCurl, megaByteOfData);
 			if (upload_mbps == 0.0f) {
 				continue;
 			}
