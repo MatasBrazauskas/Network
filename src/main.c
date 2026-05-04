@@ -5,6 +5,7 @@
 #include "config.h"
 #include "curlUtils.h"
 #include "jsonUtils.h"
+#include "testOperations.h"
 
 int main(const int argc, char** argv) {
 
@@ -25,32 +26,19 @@ int main(const int argc, char** argv) {
 		printf("Can't create a heap memory of 1MB");
 	}
 
-	char *currentLocation = NULL;
-	CURL *locationCurl = createLocationCurl();
-
-	if (locationCurl != NULL) {
-		currentLocation = getCurrLocation(locationCurl);
-
-		if (currentLocation == NULL) {
-			printf("Some problem getting the user location.\n");
-		} else {
-			printf("Current user location: %s.\n", currentLocation);
-		}
-	} else {
-		printf("Can't initialize CURL for connection with location API.\n");
-	}
-
-	cleanUpCurl(locationCurl);
-
-	Config config = createConfig(argc, argv, currentLocation);
+	const Config config = createConfig(argc, argv);
 
 	printf("%d\n", config.downloadOperation);
 	printf("%d\n", config.serverId);
 	printf("%d\n", config.uploadOperation);
 	printf("%d\n", config.clientId);
 	printf("%d\n", config.locationType);
-	printf("%s\n", config.searchCountry);
+	printf("%s\n",config.searchCountry != NULL ? config.searchCountry : "(none)");
 	printf("%d\n", config.getCurrentLocation);
+
+	if (getCurrentCountry(&config)) {
+		currentCountry();
+	}
 
 	{
 		cJSON* server = NULL;

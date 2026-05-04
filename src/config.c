@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 static Config defaultConfigSetup() {
     const Config config = {
@@ -20,28 +21,21 @@ static Config defaultConfigSetup() {
     return config;
 }
 
-static Config allOperationConfigSetup(const char *t_searchCountry) {
-    const char *searchCountry = t_searchCountry;
-    enum LocationType locationType = CurrentLocation;
-
-    if (searchCountry == NULL) {
-        locationType = NoCountry;
-    }
-
+static Config allOperationConfigSetup() {
     const Config config = {
         .downloadOperation = AllServers,
         .serverId = INT_MIN,
         .uploadOperation = AllServers,
         .clientId = INT_MIN,
-        .locationType = locationType,
-        .searchCountry = searchCountry,
+        .locationType = NoCountry,
+        .searchCountry = NULL,
         .getCurrentLocation = true,
     };
 
     return config;
 }
 
-Config createConfig(int argc, char** argv, const char *t_currentCountry) {
+Config createConfig(int argc, char** argv) {
     Config config = defaultConfigSetup();
 
     int parsedArgs = 0;
@@ -50,15 +44,15 @@ Config createConfig(int argc, char** argv, const char *t_currentCountry) {
     while ((val = getopt(argc, argv, "d:u:l:c")) != -1) {
         switch (val) {
             case 'd':
-                if (strcmp(optarg, "all") == 0) {
+                if (strncmp(optarg, "all", 3) == 0) {
                     config.downloadOperation = AllServers;
                     break;
                 }
 
-                const int serverId = atoi(optarg);
+                const long serverId = strtol(optarg, NULL, 10);
 
-                if (serverId <= 0) {
-                    printf("Invalid server id\n");
+                if (errno == ERANGE || errno == EINVAL || serverId <= 0 || serverId == LONG_MIN || serverId == LONG_MAX) {
+                    printf("Invalid server id.\n");
                     break;
                 }
 
@@ -66,15 +60,15 @@ Config createConfig(int argc, char** argv, const char *t_currentCountry) {
                 config.downloadOperation = SingleServer;
                 break;
             case 'u':
-                if (strcmp(optarg, "all") == 0) {
+                if (strncmp(optarg, "all", 3) == 0) {
                     config.uploadOperation = AllServers;
                     break;
                 }
 
-                const int clientId = atoi(optarg);
+                const long clientId = strtol(optarg, NULL, 10);
 
-                if (clientId <= 0) {
-                    printf("Invalid server id\n");
+                if (errno == ERANGE || errno == EINVAL || clientId <= 0 || clientId == LONG_MIN || clientId == LONG_MAX) {
+                    printf("Invalid client id.\n");
                     break;
                 }
 
@@ -83,12 +77,14 @@ Config createConfig(int argc, char** argv, const char *t_currentCountry) {
                 break;
             case 'l':
                 config.locationType = ProvidedLocation;
+                printf("%s\n", optarg);
                 config.searchCountry = optarg;
                 break;
             case 'c':
                 config.getCurrentLocation = true;
                 break;
             default:
+                fprintf(stderr, "Invalid option.\n");
                 parsedArgs--;
                 break;
         }
@@ -96,7 +92,7 @@ Config createConfig(int argc, char** argv, const char *t_currentCountry) {
     }
 
     if (parsedArgs == 0) {
-        config = allOperationConfigSetup(t_currentCountry);
+        config = allOperationConfigSetup();
     }
 
     return config;

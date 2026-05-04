@@ -9,8 +9,8 @@ typedef struct {
     size_t sent;
 } MegaByteOfData;
 
-enum Operation {None, AllServers, SingleServer};
-enum LocationType{ NoCountry, CurrentLocation, ProvidedLocation};
+enum Operation { None, AllServers, SingleServer };
+enum LocationType{ NoCountry, ProvidedLocation };
 
 typedef struct {
     enum Operation downloadOperation;
@@ -25,5 +25,5 @@ typedef struct {
     bool getCurrentLocation;
 } Config;
 
-Config createConfig(int argc, char** argv, const char *t_currentCountry);
+Config createConfig(int argc, char** argv);
 MegaByteOfData *createMegaByteOfData();

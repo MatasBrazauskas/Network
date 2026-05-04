@@ -11,7 +11,7 @@ static const char DownloadUrl[] = "http://%s/speedtest/random1000x1000.jpg";
 static const char UploadUrl[] = "http://%s/speedtest/upload.php";
 
 static char *createUrl(const char *t_url, const char *t_path) {
-    int length = snprintf(NULL, 0, t_path, t_url);
+    const int length = snprintf(NULL, 0, t_path, t_url);
     if (length < 0) {
         return NULL;
     }
