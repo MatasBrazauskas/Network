@@ -15,5 +15,5 @@ gdb: $(TARGET)
 clean: $(TARGET)
 	rm -f $(TARGET)
 
-memLeak: $(TARGET)
+valgrind: $(TARGET)
 	valgrind --leak-check=full --verbose --track-origins=yes --show-leak-kinds=all ./$(TARGET)

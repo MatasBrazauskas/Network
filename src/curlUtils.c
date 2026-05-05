@@ -48,17 +48,15 @@ static size_t writeCallback(char *t_buffer, size_t t_size, size_t t_nmemb, void 
 }
 
 static size_t readCallback(char *t_buffer, size_t t_size, size_t t_nitems, void *t_userdata) {
-    MegaByteOfData *upload = t_userdata;
+    KilobyteOfData *upload = t_userdata;
 
     const size_t maxBytes = t_size * t_nitems;
     const size_t remaining = upload->size - upload->sent;
 
     const size_t bytesToSend = remaining < maxBytes ? remaining : maxBytes;
 
-    if (bytesToSend > 0) {
-        memcpy(t_buffer, upload->data + upload->sent, bytesToSend);
-        upload->sent += bytesToSend;
-    }
+    memcpy(t_buffer, &upload->data[upload->sent], bytesToSend);
+    upload->sent += bytesToSend;
 
     return bytesToSend;
 }
@@ -128,7 +126,10 @@ CURLcode curlGlobalInit(void) {
 }
 
 void cleanUpCurl(CURL* t_curl) {
-    curl_easy_cleanup(t_curl);
+    if (t_curl) {
+        curl_easy_cleanup(t_curl);
+        t_curl = NULL;
+    }
 }
 
 char *getCurrLocation(CURL *t_curl) {
@@ -146,6 +147,12 @@ char *getCurrLocation(CURL *t_curl) {
         return NULL;
     }
 
+    long httpCode = 0;
+    curl_easy_getinfo (t_curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    if(httpCode != 200) {
+        return NULL;
+    }
+
     Location *location = getLocationData(locationJson);
 
     if (location == NULL) {
@@ -153,6 +160,7 @@ char *getCurrLocation(CURL *t_curl) {
     }
 
     if (strcmp(location->status, "success") != 0) {
+        cleanUpLocationData(location);
         return NULL;
     }
 
@@ -160,13 +168,14 @@ char *getCurrLocation(CURL *t_curl) {
     char *country = malloc(countryNameLen + 1);
 
     if (country == NULL) {
+        cleanUpLocationData(location);
         return NULL;
     }
 
     memcpy(country, location->country, countryNameLen);
     country[countryNameLen] = 0;
 
-    freeUpLocationData(location);
+    cleanUpLocationData(location);
 
     return country;
 }
@@ -175,6 +184,12 @@ double downloadSpeed(CURL *t_curl) {
     const CURLcode code = curl_easy_perform(t_curl);
 
     if (code != CURLE_OK) {
+        return 0.0;
+    }
+
+    long httpCode = 0;
+    curl_easy_getinfo (t_curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    if(httpCode != 200) {
         return 0.0;
     }
 
@@ -189,11 +204,23 @@ double downloadSpeed(CURL *t_curl) {
     return mbps;
 }
 
-double uploadSpeed(CURL *t_curl, MegaByteOfData *t_uploadData) {
-    curl_easy_setopt(t_curl, CURLOPT_READDATA, &t_uploadData);
+double uploadSpeed(CURL *t_curl, KilobyteOfData *t_uploadData) {
+    if (t_curl == NULL || t_uploadData == NULL) {
+        return 0.0;
+    }
+
+    t_uploadData->sent = 0;
+
+    curl_easy_setopt(t_curl, CURLOPT_READDATA, t_uploadData);
     curl_easy_setopt(t_curl, CURLOPT_POSTFIELDSIZE, (long)t_uploadData->size);
 
     if (curl_easy_perform(t_curl) != CURLE_OK) {
+        return 0.0;
+    }
+
+    long httpCode = 0;
+    curl_easy_getinfo (t_curl, CURLINFO_RESPONSE_CODE, &httpCode);
+    if(httpCode != 200) {
         return 0.0;
     }
 
@@ -207,4 +234,3 @@ double uploadSpeed(CURL *t_curl, MegaByteOfData *t_uploadData) {
 
     return mbps;
 }
-

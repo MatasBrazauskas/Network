@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 
 #include "config.h"
@@ -6,7 +7,6 @@
 #include "testOperations.h"
 
 int main(const int argc, char** argv) {
-
 	cJSON *json = readServersJson();
 	if (!validJsonArray(json)) {
 		printf("Invalid JSON, can't start programme.\n");
@@ -19,24 +19,31 @@ int main(const int argc, char** argv) {
 		return 1;
 	}
 
-	MegaByteOfData *megaByteOfData = createMegaByteOfData();
-	if (megaByteOfData == NULL) {
-		printf("Can't create a heap memory of 1MB");
-	}
+	Config config = createConfig(argc, argv);
 
-	const Config config = createConfig(argc, argv);
-
-	printf("%d\n", config.downloadOperation);
-	printf("%d\n", config.serverId);
+	/*printf("%d\n", config.downloadOperation);
+	printf("%d\n", config.downloadServerId);
 	printf("%d\n", config.uploadOperation);
-	printf("%d\n", config.clientId);
+	printf("%d\n", config.uploadServerId);
 	printf("%d\n", config.locationType);
 	printf("%s\n",config.searchCountry != NULL ? config.searchCountry : "(none)");
-	printf("%d\n", config.getCurrentLocation);
+	printf("%d\n", config.getCurrentLocation);*/
 
 	if (getCurrentCountry(&config)) {
 		currentCountry();
 	}
+
+	KilobyteOfData *kilobyte = NULL;
+	if (performUploadTest(&config) || searchBestServerInCountry(&config)) {
+		kilobyte = createKilobyteOfData();
+
+		if (kilobyte == NULL) {
+			config.uploadOperation = None;
+			printf("Can't create a heap memory of 1kB. Upload measurements will be skipped.\n");
+		}
+	}
+
+	BestServerSpeedData bestServer = createBestServerSpeedData();
 
 	{
 		cJSON* server = NULL;
@@ -48,30 +55,60 @@ int main(const int argc, char** argv) {
 			}
 			//printf("%s, %s, %s, %s, %d\n", data->country, data->city, data->provider, data->host, data->id);
 
+			double downloadMbps = 0.0;
+			double uploadMbps = 0.0;
+
 			if (performDownloadTest(&config)) {
 				if (performDownloadTestOnAllServers(&config)) {
-					downloadAllServers(data);
+					downloadMbps = downloadAllServers(data);
+					if (downloadMbps != 0.0) {
+						printf("Download Mbs per second: %f\n", downloadMbps);
+					}
 				} else if (performDownloadTestOnSingleServer(&config)) {
-					downloadSingleServer(&config, data);
+					downloadMbps = downloadSingleServer(&config, data);
+					if (downloadMbps != 0.0) {
+						printf("Download Mbs per second: %f\n", downloadMbps);
+					}
 				}
+			} else if (searchBestServerInCountry(&config)) {
+				downloadMbps = downloadAllServers(data);
 			}
 
 			if (performUploadTest(&config)) {
 				if (performUploadTestOnAllServers(&config)) {
-					uploadAllServers(data, megaByteOfData);
+					uploadMbps = uploadAllServers(data, kilobyte);
+					if (uploadMbps != 0.0F) {
+						printf("Upload Mbs per second: %f\n", uploadMbps);
+					}
 				} else if (performUploadTestOnSingleServer(&config)) {
-					uploadSingleServer(&config, data, megaByteOfData);
+					uploadMbps = uploadSingleServer(&config, data, kilobyte);
+					if (uploadMbps != 0.0F) {
+						printf("Upload Mbs per second: %f\n", uploadMbps);
+					}
 				}
+			} else if (searchBestServerInCountry(&config)) {
+				uploadMbps = uploadAllServers(data, kilobyte);
 			}
 
 			if (searchBestServerInCountry(&config)) {
-				searchForBestServer(&config);
+				searchForBestServer(config.searchCountry, data, &bestServer, downloadMbps, uploadMbps);
 			}
 
 			freeUpData(data);
 		}
 	}
 
-	cleanUpMegaByteOfData(megaByteOfData);
+	if (searchBestServerInCountry(&config)) {
+		if (bestServer.downloadServer != NULL && bestServer.uploadServer != NULL) {
+			printf("Best download server %s. With speed: %f\n", bestServer.downloadServer, bestServer.downloadSpeed);
+			printf("Best download server %s. With speed: %f\n", bestServer.uploadServer, bestServer.uploadSpeed);
+		} else {
+			printf("Couldn't find server or/and any server that meats criteria.\n");
+		}
+	}
+
+	cleanUpBestServerSpeedData(&bestServer);
+	cleanUpKilobyte(kilobyte);
 	cleanUpJson(json);
+	return 0;
 }

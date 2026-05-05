@@ -25,4 +25,4 @@ Data* getServerData(const cJSON* t_server);
 void freeUpData(Data *t_data);
 
 Location *getLocationData(const char *t_locationStr);
-void freeUpLocationData(Location *t_data);
+void cleanUpLocationData(Location *t_data);

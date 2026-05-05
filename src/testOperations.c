@@ -4,8 +4,31 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "jsonUtils.h"
+
+static bool updateBestServerData(char **t_bestServerName, float *t_bestSpeed, const float t_candidateSpeed, const char *t_serverData) {
+    if (t_bestServerName == NULL || t_bestSpeed == NULL || t_serverData == NULL) {
+        return false;
+    }
+
+    if (t_candidateSpeed <= 0.0F || t_candidateSpeed <= *t_bestSpeed) {
+        return true;
+    }
+
+    const size_t len = strlen(t_serverData) + 1;
+    char *ptr = realloc(*t_bestServerName, len);
+    if (ptr == NULL) {
+        return false;
+    }
+
+    memcpy(ptr, t_serverData, len);
+    *t_bestServerName = ptr;
+    *t_bestSpeed = t_candidateSpeed;
+
+    return true;
+}
 
 bool performDownloadTest(const Config *t_config) {
     return t_config->downloadOperation != None;
@@ -39,65 +62,118 @@ bool performUploadTestOnAllServers(const Config *t_config) {
     return t_config->uploadOperation == AllServers;
 }
 
-void downloadSingleServer(const Config *t_config, const Data *t_data) {
-    if (t_config->serverId == t_data->id) {
-        downloadAllServers(t_data);
+double downloadSingleServer(const Config *t_config, const Data *t_data) {
+    if (t_config == NULL || t_data == NULL) {
+        return 0.0F;
     }
+
+    if (t_config->downloadServerId == t_data->id) {
+        return downloadAllServers(t_data);
+    }
+    return 0.0F;
 }
 
-void downloadAllServers(const Data *t_data) {
-    CURL* downloadCurl = createDownloadCurl(t_data->host);
+double downloadAllServers(const Data *t_data) {
+    if (t_data == NULL || t_data->host == NULL) {
+        return 0.0F;
+    }
+
+    CURL* downloadCurl = createDownloadCurl();
     if (downloadCurl == NULL) {
-        return;
+        return 0.0F;
     }
 
     char *url = setUrl(downloadCurl, t_data->host, DownloadUrl);
     if (url == NULL) {
         cleanUpCurl(downloadCurl);
-        return;
+        return 0.0F;
     }
 
-    const double download_mbps = downloadSpeed(downloadCurl);
-    if (download_mbps == 0.0F) {
-        return;
+    const double downloadMbps = downloadSpeed(downloadCurl);
+    if (downloadMbps == 0.0F) {
+        free(url);
+        cleanUpCurl(downloadCurl);
+        return 0.0F;
     }
-    printf("Download Mbs per second: %f\n", download_mbps);
 
     free(url);
     cleanUpCurl(downloadCurl);
+
+    return downloadMbps;
 }
 
-void uploadSingleServer(const Config *t_config, const Data *t_data, MegaByteOfData *t_megaByteOfData) {
-    if (t_config->clientId == t_data->id) {
-        uploadAllServers(t_data, t_megaByteOfData);
+double uploadSingleServer(const Config *t_config, const Data *t_data, KilobyteOfData *t_megaByteOfData) {
+    if (t_config == NULL || t_data == NULL) {
+        return 0.0F;
     }
+
+    if (t_config->uploadServerId == t_data->id) {
+        return uploadAllServers(t_data, t_megaByteOfData);
+    }
+    return 0.0F;
 }
 
-void uploadAllServers(const Data *t_data, MegaByteOfData *t_megaByteOfData) {
-    CURL *uploadCurl = createUploadCurl(t_data->host);
+double uploadAllServers(const Data *t_data, KilobyteOfData *t_megaByteOfData) {
+    if (t_data == NULL || t_data->host == NULL || t_megaByteOfData == NULL) {
+        return 0.0F;
+    }
+
+    CURL *uploadCurl = createUploadCurl();
     if (uploadCurl == NULL) {
-        return;
+        return 0.0F;
     }
 
     char *url = setUrl(uploadCurl, t_data->host, UploadUrl);
     if (url == NULL) {
         cleanUpCurl(uploadCurl);
-        return;
+        return 0.0F;
     }
 
-    const double upload_mbps = uploadSpeed(uploadCurl, t_megaByteOfData);
-    if (upload_mbps == 0.0f) {
-        return;
+    const double uploadMbps = uploadSpeed(uploadCurl, t_megaByteOfData);
+    if (uploadMbps == 0.0f) {
+        free(url);
+        cleanUpCurl(uploadCurl);
+        return 0.0f;
     }
-
-    printf("Upload Mbs per second: %f\n", upload_mbps);
 
     free(url);
     cleanUpCurl(uploadCurl);
+
+    return uploadMbps;
 }
+void searchForBestServer(const char *t_currCountry, const Data *t_data, BestServerSpeedData *t_bestServer, const double t_downloadSpeed, const double t_uploadSpeed) {
+    if (t_currCountry == NULL || t_data == NULL || t_data->country == NULL || t_bestServer == NULL) {
+        return;
+    }
 
-void searchForBestServer(const Config *t_config) {
+    if (strcmp(t_currCountry, t_data->country) != 0) {
+        return;
+    }
 
+    ServerSpeedData *serverData = createServerSpeedData(t_data, t_downloadSpeed, t_uploadSpeed);
+
+    if (serverData == NULL) {
+        return;
+    }
+
+    const bool updatedDownload = updateBestServerData(
+        &t_bestServer->downloadServer,
+        &t_bestServer->downloadSpeed,
+        serverData->downloadSpeed,
+        serverData->serverData
+    );
+    const bool updatedUpload = updateBestServerData(
+        &t_bestServer->uploadServer,
+        &t_bestServer->uploadSpeed,
+        serverData->uploadSpeed,
+        serverData->serverData
+    );
+
+    cleanUpServerSpeedData(serverData);
+
+    if (!updatedDownload || !updatedUpload) {
+        return;
+    }
 }
 
 void currentCountry() {

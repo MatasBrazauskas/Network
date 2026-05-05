@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 //static const char Path[] = "data/speedtest_server_list.json"
 static const char Path[] =  "data/temp.json";
@@ -14,14 +15,14 @@ cJSON *readServersJson() {
     const int fd = open(Path, O_RDONLY);
 
     if(fd == -1) {
-        perror("Cant open file");
-        abort();
+        fprintf(stderr, "Cant open file.");
+        return NULL;
     }
 
     struct stat fileStat;
     if(fstat(fd, &fileStat) == -1) {
-        perror("Cant get file info");
-        abort();
+        fprintf(stderr, "Can't get file information.");
+        return NULL;
     }
 
     const off_t fileSize = fileStat.st_size;
@@ -29,8 +30,8 @@ cJSON *readServersJson() {
     void* mappedFile = mmap(NULL, fileSize, PROT_READ, MAP_SHARED, fd, 0);
 
     if(mappedFile == MAP_FAILED) {
-        perror("Failed at mmap");
-        abort();
+        fprintf(stderr, "Can't create a file mapping");
+        return NULL;
     }
 
     cJSON* json = cJSON_ParseWithLength(mappedFile, fileSize);
@@ -92,15 +93,17 @@ bool validJsonArray(const cJSON *t_json) {
 }
 
 void cleanUpJson(cJSON *t_json) {
-    cJSON_Delete(t_json);
-
-    t_json = NULL;
+    if(t_json != NULL) {
+        cJSON_Delete(t_json);
+        t_json = NULL;
+    }
 }
 
 void freeUpData(Data *t_data) {
-    free(t_data);
-
-    t_data = NULL;
+    if (t_data != NULL) {
+        free(t_data);
+        t_data = NULL;
+    }
 }
 
 Location *getLocationData(const char *t_locationStr) {
@@ -122,15 +125,35 @@ Location *getLocationData(const char *t_locationStr) {
         return NULL;
     }
 
-    location->status = status->valuestring;
-    location->country = country->valuestring;
+    const size_t statusStrLen = strlen(status->valuestring);
+    const size_t countryStrLen = strlen(country->valuestring);
+
+    location->status = malloc(statusStrLen + 1);
+    if (location->status == NULL) {
+        return NULL;
+    }
+
+    memcpy(location->status, status->valuestring, statusStrLen);
+    location->status[statusStrLen] = 0;
+
+    location->country = malloc(countryStrLen + 1);
+    if (location->country == NULL) {
+        free(location->status);
+        return NULL;
+    }
+
+    memcpy(location->country, country->valuestring, countryStrLen);
+    location->country[countryStrLen] = 0;
 
     return location;
 }
 
-void freeUpLocationData(Location *t_data) {
-    free(t_data->status);
-    free(t_data->country);
+void cleanUpLocationData(Location *t_data) {
+    if (t_data != NULL) {
+        free(t_data->status);
+        free(t_data->country);
+        free(t_data);
 
-    t_data = NULL;
+        t_data = NULL;
+    }
 }

@@ -16,10 +16,10 @@ bool performDownloadTestOnAllServers(const Config *t_config);
 bool performUploadTestOnSingleServer(const Config *t_config);
 bool performUploadTestOnAllServers(const Config *t_config);
 
-void downloadSingleServer(const Config *t_config, const Data *t_data);
-void downloadAllServers(const Data *t_data);
-void uploadSingleServer(const Config *t_config, const Data *t_data, MegaByteOfData *t_megaByteOfData);
-void uploadAllServers(const Data *t_data, MegaByteOfData *t_megaByteOfData);
+double downloadSingleServer(const Config *t_config, const Data *t_data);
+double downloadAllServers(const Data *t_data);
+double uploadSingleServer(const Config *t_config, const Data *t_data, KilobyteOfData *t_megaByteOfData);
+double uploadAllServers(const Data *t_data, KilobyteOfData *t_megaByteOfData);
 
-void searchForBestServer(const Config *t_config);
+void searchForBestServer(const char *t_currCountry, const Data *t_data, BestServerSpeedData *t_bestServer, const double t_downloadSpeed, const double t_uploadSpeed);
 void currentCountry();
