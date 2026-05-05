@@ -1,15 +1,15 @@
 #pragma once
 
+#include "jsonUtils.h"
+
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "jsonUtils.h"
 
 typedef struct {
     char *data;
     size_t size;
     size_t sent;
-} KilobyteOfData;
+} KilobytesOfData;
 
 typedef struct {
     char *serverData;
@@ -42,8 +42,8 @@ typedef struct {
 
 Config createConfig(int argc, char** argv);
 
-KilobyteOfData *createKilobyteOfData();
-void cleanUpKilobyte(KilobyteOfData *data);
+KilobytesOfData *createKilobyteOfData();
+void cleanUpKilobyte(KilobytesOfData *data);
 
 ServerSpeedData *createServerSpeedData(const Data *t_data, const double t_downloadSpeed, const double t_uploadSpeed);
 void cleanUpServerSpeedData(ServerSpeedData *t_data);

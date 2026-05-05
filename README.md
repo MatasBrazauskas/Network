@@ -13,7 +13,13 @@ This creates an executable named `main`.
 ## Usage
 
 ```bash
-./main [OPTIONS]
+./bin/main [OPTIONS]
+```
+
+## Clean
+
+```bash
+make clean
 ```
 
 ### Options
@@ -51,9 +57,3 @@ This creates an executable named `main`.
 
 - `libcurl` – For HTTP requests
 - `cjson` – For JSON parsing
-
-## Clean
-
-```bash
-make clean
-```

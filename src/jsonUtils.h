@@ -1,7 +1,6 @@
 #pragma once
 
 #include <stdbool.h>
-
 #include <cjson/cJSON.h>
 
 typedef struct {

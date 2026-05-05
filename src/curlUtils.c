@@ -2,7 +2,6 @@
 #include "jsonUtils.h"
 
 #include <curl/curl.h>
-
 #include <stdlib.h>
 #include <string.h>
 
@@ -48,7 +47,7 @@ static size_t writeCallback(char *t_buffer, size_t t_size, size_t t_nmemb, void 
 }
 
 static size_t readCallback(char *t_buffer, size_t t_size, size_t t_nitems, void *t_userdata) {
-    KilobyteOfData *upload = t_userdata;
+    KilobytesOfData *upload = t_userdata;
 
     const size_t maxBytes = t_size * t_nitems;
     const size_t remaining = upload->size - upload->sent;
@@ -116,6 +115,7 @@ CURL *createUploadCurl() {
     curl_easy_setopt(t_curl, CURLOPT_CONNECTTIMEOUT, 5L);
     curl_easy_setopt(t_curl, CURLOPT_USERAGENT, CHKSPEED_VERSION);
     curl_easy_setopt(t_curl, CURLOPT_READFUNCTION, readCallback);
+    curl_easy_setopt(t_curl, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(t_curl, CURLOPT_POST, 1L);
 
     return t_curl;
@@ -204,7 +204,7 @@ double downloadSpeed(CURL *t_curl) {
     return mbps;
 }
 
-double uploadSpeed(CURL *t_curl, KilobyteOfData *t_uploadData) {
+double uploadSpeed(CURL *t_curl, KilobytesOfData *t_uploadData) {
     if (t_curl == NULL || t_uploadData == NULL) {
         return 0.0;
     }

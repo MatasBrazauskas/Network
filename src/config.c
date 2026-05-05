@@ -1,11 +1,12 @@
 #include "config.h"
 
 #include "curl/curl.h"
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+
+#define COUPLE_KB 64 * 1024;
 
 static Config defaultConfigSetup() {
     const Config config = {
@@ -53,7 +54,7 @@ Config createConfig(int argc, char** argv) {
                 const long serverId = strtol(optarg, NULL, 10);
 
                 if (errno == ERANGE || errno == EINVAL || serverId <= 0 || serverId == LONG_MAX) {
-                    printf("Invalid server id.\n");
+                    fprintf(stderr,"Invalid server id.\n");
                     break;
                 }
 
@@ -72,7 +73,7 @@ Config createConfig(int argc, char** argv) {
                 const long clientId = strtol(optarg, NULL, 10);
 
                 if (errno == ERANGE || errno == EINVAL || clientId <= 0 || clientId == LONG_MAX) {
-                    printf("Invalid client id.\n");
+                    fprintf(stderr,"Invalid client id.\n");
                     break;
                 }
 
@@ -98,19 +99,20 @@ Config createConfig(int argc, char** argv) {
     }
 
     if (parsedArgument == false) {
+        printf("No arguments provided: running al possible tests.\n");
         config = allOperationConfigSetup();
     }
 
     return config;
 }
 
-KilobyteOfData *createKilobyteOfData() {
-    KilobyteOfData *kBData = malloc(sizeof(KilobyteOfData));
+KilobytesOfData *createKilobyteOfData() {
+    KilobytesOfData *kBData = malloc(sizeof(KilobytesOfData));
     if (kBData == NULL) {
         return NULL;
     }
 
-    const long kB = 64 * 1024;
+    const long kB = COUPLE_KB;
     kBData->data = malloc(kB + 1);
 
     if (kBData->data == NULL) {
@@ -126,7 +128,7 @@ KilobyteOfData *createKilobyteOfData() {
     return kBData;
 }
 
-void cleanUpKilobyte(KilobyteOfData *t_data) {
+void cleanUpKilobyte(KilobytesOfData *t_data) {
     if (t_data != NULL) {
         free(t_data->data);
         free(t_data);
@@ -143,21 +145,21 @@ ServerSpeedData *createServerSpeedData(const Data *t_data, const double t_downlo
         return NULL;
     }
 
-    int length = snprintf(NULL, 0, "%d, %s\n", t_data->id, t_data->host);
+    int length = snprintf(NULL, 0, "%d, %s", t_data->id, t_data->host);
 
     if (length < 0) {
         cleanUpServerSpeedData(serverSpeedData);
         return NULL;
     }
 
-    serverSpeedData->serverData = malloc((size_t)length + 1);
+    serverSpeedData->serverData = malloc((size_t)length);
 
     if (serverSpeedData->serverData == NULL) {
         cleanUpServerSpeedData(serverSpeedData);
         return NULL;
     }
 
-    snprintf(serverSpeedData->serverData, (size_t)length + 1,"%d, %s\n", t_data->id, t_data->host);
+    snprintf(serverSpeedData->serverData, (size_t)length,"%d, %s", t_data->id, t_data->host);
 
     serverSpeedData->downloadSpeed = t_downloadSpeed;
     serverSpeedData->uploadSpeed = t_uploadSpeed;

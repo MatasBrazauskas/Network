@@ -8,14 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-//static const char Path[] = "data/speedtest_server_list.json"
-static const char Path[] =  "data/temp.json";
+static const char Path[] = "data/speedtest_server_list.json";
 
 cJSON *readServersJson() {
     const int fd = open(Path, O_RDONLY);
 
     if(fd == -1) {
-        fprintf(stderr, "Cant open file.");
+        fprintf(stderr, "Can't open file.");
         return NULL;
     }
 
@@ -30,7 +29,7 @@ cJSON *readServersJson() {
     void* mappedFile = mmap(NULL, fileSize, PROT_READ, MAP_SHARED, fd, 0);
 
     if(mappedFile == MAP_FAILED) {
-        fprintf(stderr, "Can't create a file mapping");
+        fprintf(stderr, "Can't create a file mapping.");
         return NULL;
     }
 
@@ -107,7 +106,7 @@ void freeUpData(Data *t_data) {
 }
 
 Location *getLocationData(const char *t_locationStr) {
-    const cJSON* json = cJSON_Parse(t_locationStr);
+    cJSON* json = cJSON_Parse(t_locationStr);
 
     const cJSON *status = cJSON_GetObjectItemCaseSensitive(json, "status");
     const cJSON *country = cJSON_GetObjectItemCaseSensitive(json, "country");
@@ -144,6 +143,8 @@ Location *getLocationData(const char *t_locationStr) {
 
     memcpy(location->country, country->valuestring, countryStrLen);
     location->country[countryStrLen] = 0;
+
+    cleanUpJson(json);
 
     return location;
 }

@@ -22,4 +22,4 @@ void cleanUpCurl(CURL* t_curl);
 
 char *getCurrLocation(CURL *t_curl);
 double downloadSpeed(CURL *t_curl);
-double uploadSpeed(CURL *t_curl, KilobyteOfData *t_uploadData);
+double uploadSpeed(CURL *t_curl, KilobytesOfData *t_uploadData);

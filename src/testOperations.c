@@ -1,12 +1,13 @@
 #include "testOperations.h"
 
 #include "curlUtils.h"
+#include "jsonUtils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "jsonUtils.h"
+#define SINGLE_SERVER_ERR -1.0f
 
 static bool updateBestServerData(char **t_bestServerName, float *t_bestSpeed, const float t_candidateSpeed, const char *t_serverData) {
     if (t_bestServerName == NULL || t_bestSpeed == NULL || t_serverData == NULL) {
@@ -62,6 +63,31 @@ bool performUploadTestOnAllServers(const Config *t_config) {
     return t_config->uploadOperation == AllServers;
 }
 
+bool shouldPrintServerData(const Config *t_config, const Data *t_data) {
+    if (t_config == NULL || t_data == NULL) {
+        return false;
+    }
+
+    if (performDownloadTestOnAllServers(t_config) || performUploadTestOnAllServers(t_config)) {
+        return true;
+    }
+
+    if (performDownloadTestOnSingleServer(t_config) && t_config->downloadServerId == t_data->id) {
+        return true;
+    }
+
+    if (performUploadTestOnSingleServer(t_config) && t_config->uploadServerId == t_data->id) {
+        return true;
+    }
+
+    if (searchBestServerInCountry(t_config) && t_config->searchCountry != NULL && t_data->country != NULL &&
+        strcmp(t_config->searchCountry, t_data->country) == 0) {
+        return true;
+    }
+
+    return false;
+}
+
 double downloadSingleServer(const Config *t_config, const Data *t_data) {
     if (t_config == NULL || t_data == NULL) {
         return 0.0F;
@@ -70,7 +96,7 @@ double downloadSingleServer(const Config *t_config, const Data *t_data) {
     if (t_config->downloadServerId == t_data->id) {
         return downloadAllServers(t_data);
     }
-    return 0.0F;
+    return SINGLE_SERVER_ERR;
 }
 
 double downloadAllServers(const Data *t_data) {
@@ -102,7 +128,7 @@ double downloadAllServers(const Data *t_data) {
     return downloadMbps;
 }
 
-double uploadSingleServer(const Config *t_config, const Data *t_data, KilobyteOfData *t_megaByteOfData) {
+double uploadSingleServer(const Config *t_config, const Data *t_data, KilobytesOfData *t_megaByteOfData) {
     if (t_config == NULL || t_data == NULL) {
         return 0.0F;
     }
@@ -110,10 +136,10 @@ double uploadSingleServer(const Config *t_config, const Data *t_data, KilobyteOf
     if (t_config->uploadServerId == t_data->id) {
         return uploadAllServers(t_data, t_megaByteOfData);
     }
-    return 0.0F;
+    return SINGLE_SERVER_ERR;
 }
 
-double uploadAllServers(const Data *t_data, KilobyteOfData *t_megaByteOfData) {
+double uploadAllServers(const Data *t_data, KilobytesOfData *t_megaByteOfData) {
     if (t_data == NULL || t_data->host == NULL || t_megaByteOfData == NULL) {
         return 0.0F;
     }
@@ -184,12 +210,12 @@ void currentCountry() {
         currentLocation = getCurrLocation(locationCurl);
 
         if (currentLocation == NULL) {
-            printf("Some problem getting the user location.\n");
+            fprintf(stderr, "Some problem getting the user location.\n");
         } else {
             printf("Current user location: %s.\n", currentLocation);
         }
     } else {
-        printf("Can't initialize CURL for connection with location API.\n");
+        fprintf(stderr, "Problems with connection to location API.\n");
     }
 
     cleanUpCurl(locationCurl);
