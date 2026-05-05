@@ -35,22 +35,22 @@ make clean
 
 ```bash
 # Test download and upload on all servers (default)
-./main
+./bin/main
 
 # Download test on server with ID 5
-./main -d 5
+./bin/main -d 5
 
 # Upload test on all servers
-./main -u a
+./bin/main -u a
 
 # Find best server in Poland
-./main -l Poland
+./bin/main -l Poland
 
 # Get current location
-./main -c
+./bin/main -c
 
 # Download on server 3 and upload on all servers
-./main -d 3 -u a
+./bin/main -d 3 -u a
 ```
 
 ## Dependencies
