@@ -6,10 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static const char LocationUrl[] = "http://ip-api.com/json/?fields=status,country";
-static const char DownloadUrl[] = "http://%s/speedtest/random1000x1000.jpg";
-static const char UploadUrl[] = "http://%s/speedtest/upload.php";
-
 static char *createUrl(const char *t_url, const char *t_path) {
     const int length = snprintf(NULL, 0, t_path, t_url);
     if (length < 0) {
@@ -67,6 +63,16 @@ static size_t readCallback(char *t_buffer, size_t t_size, size_t t_nitems, void 
     return bytesToSend;
 }
 
+char *setUrl(CURL *t_curl, const char *t_url, const char *t_path) {
+    char *url = createUrl(t_url, t_path);
+    if (url == NULL) {
+        return NULL;
+    }
+
+    curl_easy_setopt(t_curl, CURLOPT_URL, url);
+
+    return url;;
+}
 
 CURL *createLocationCurl() {
     CURL* t_curl = curl_easy_init();
@@ -75,9 +81,6 @@ CURL *createLocationCurl() {
         return NULL;
     }
 
-    const char *url =  LocationUrl;
-
-    curl_easy_setopt(t_curl, CURLOPT_URL, url);
     curl_easy_setopt(t_curl, CURLOPT_URL, LocationUrl);
     curl_easy_setopt(t_curl,CURLOPT_TIMEOUT, 10L);
     curl_easy_setopt(t_curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -87,53 +90,35 @@ CURL *createLocationCurl() {
     return t_curl;
 }
 
-CURL *createDownloadCurl(const char *t_path) {
+CURL *createDownloadCurl() {
     CURL* t_curl = curl_easy_init();
 
     if (t_curl == NULL) {
         return NULL;
     }
 
-    char *url = createUrl(t_path, DownloadUrl);
-
-    if (url == NULL) {
-        return NULL;
-    }
-
-    curl_easy_setopt(t_curl, CURLOPT_URL, url);
     curl_easy_setopt(t_curl,CURLOPT_TIMEOUT, 15L);
     curl_easy_setopt(t_curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(t_curl, CURLOPT_CONNECTTIMEOUT, 5L);
     curl_easy_setopt(t_curl, CURLOPT_USERAGENT, CHKSPEED_VERSION);
     curl_easy_setopt(t_curl, CURLOPT_WRITEFUNCTION, writeCallback);
 
-    free(url);
-
     return t_curl;
 }
 
-CURL *createUploadCurl(const char *t_path) {
+CURL *createUploadCurl() {
     CURL* t_curl = curl_easy_init();
 
     if (t_curl == NULL) {
         return NULL;
     }
 
-    char *url = createUrl(t_path, UploadUrl);
-
-    if (url == NULL) {
-        return NULL;
-    }
-
-    curl_easy_setopt(t_curl, CURLOPT_URL, url);
     curl_easy_setopt(t_curl,CURLOPT_TIMEOUT, 15L);
     curl_easy_setopt(t_curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(t_curl, CURLOPT_CONNECTTIMEOUT, 5L);
     curl_easy_setopt(t_curl, CURLOPT_USERAGENT, CHKSPEED_VERSION);
     curl_easy_setopt(t_curl, CURLOPT_READFUNCTION, readCallback);
     curl_easy_setopt(t_curl, CURLOPT_POST, 1L);
-
-    free(url);
 
     return t_curl;
 }

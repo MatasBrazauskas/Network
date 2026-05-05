@@ -114,3 +114,8 @@ MegaByteOfData *createMegaByteOfData() {
 
     return mbData;
 }
+
+void cleanUpMegaByteOfData(MegaByteOfData *data) {
+    free(data->data);
+    data = NULL;
+}

@@ -27,3 +27,4 @@ typedef struct {
 
 Config createConfig(int argc, char** argv);
 MegaByteOfData *createMegaByteOfData();
+void cleanUpMegaByteOfData(MegaByteOfData *data);

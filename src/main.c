@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "config.h"
 #include "curlUtils.h"
@@ -21,7 +19,7 @@ int main(const int argc, char** argv) {
 		return 1;
 	}
 
-	const MegaByteOfData *megaByteOfData = createMegaByteOfData();
+	MegaByteOfData *megaByteOfData = createMegaByteOfData();
 	if (megaByteOfData == NULL) {
 		printf("Can't create a heap memory of 1MB");
 	}
@@ -48,38 +46,32 @@ int main(const int argc, char** argv) {
 			if (data == NULL) {
 				continue;
 			}
+			//printf("%s, %s, %s, %s, %d\n", data->country, data->city, data->provider, data->host, data->id);
 
-			CURL* downloadCurl = createDownloadCurl(data->host);
-			if (downloadCurl == NULL) {
-				continue;
+			if (performDownloadTest(&config)) {
+				if (performDownloadTestOnAllServers(&config)) {
+					downloadAllServers(data);
+				} else if (performDownloadTestOnSingleServer(&config)) {
+					downloadSingleServer(&config, data);
+				}
 			}
 
-			printf("%s, %s, %s, %s, %d\n", data->country, data->city, data->provider, data->host, data->id);
-
-			const double download_mbps = downloadSpeed(downloadCurl);
-			if (download_mbps == 0.0F) {
-				continue;
-			}
-			printf("Download Mbs per second: %f\n", download_mbps);
-
-
-			CURL *uploadCurl = createUploadCurl(data->host);
-			if (uploadCurl == NULL) {
-				continue;
+			if (performUploadTest(&config)) {
+				if (performUploadTestOnAllServers(&config)) {
+					uploadAllServers(data, megaByteOfData);
+				} else if (performUploadTestOnSingleServer(&config)) {
+					uploadSingleServer(&config, data, megaByteOfData);
+				}
 			}
 
-			const double upload_mbps = uploadSpeed(uploadCurl, megaByteOfData);
-			if (upload_mbps == 0.0f) {
-				continue;
+			if (searchBestServerInCountry(&config)) {
+				searchForBestServer(&config);
 			}
-
-			printf("Upload Mbs per second: %f\n", upload_mbps);
 
 			freeUpData(data);
-			cleanUpCurl(downloadCurl);
-			cleanUpCurl(uploadCurl);
 		}
 	}
 
+	cleanUpMegaByteOfData(megaByteOfData);
 	cleanUpJson(json);
 }

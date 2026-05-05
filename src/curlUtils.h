@@ -6,14 +6,17 @@
 
 #define CHKSPEED_VERSION "1.0"
 
-char *createDownloadUrl(const char *t_url);
-char *createUploadUrl(const char *t_url);
+static const char LocationUrl[] = "http://ip-api.com/json/?fields=status,country";
+static const char DownloadUrl[] = "http://%s/speedtest/random1000x1000.jpg";
+static const char UploadUrl[] = "http://%s/speedtest/upload.php";
+
+char *setUrl(CURL *curl, const char *t_url, const char *t_path);
 
 CURLcode curlGlobalInit(void);
 
 CURL *createLocationCurl();
-CURL *createDownloadCurl(const char *t_path);
-CURL *createUploadCurl(const char *t_path);
+CURL *createDownloadCurl();
+CURL *createUploadCurl();
 
 void cleanUpCurl(CURL* t_curl);
 
