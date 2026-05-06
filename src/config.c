@@ -136,7 +136,7 @@ void cleanUpKilobyte(KilobytesOfData *t_data) {
 }
 
 ServerSpeedData *createServerSpeedData(const Data *t_data, const double t_downloadSpeed, const double t_uploadSpeed) {
-    if (t_data == NULL || t_data->host == NULL) {
+    if (t_data == NULL) {
         return NULL;
     }
 
@@ -145,21 +145,44 @@ ServerSpeedData *createServerSpeedData(const Data *t_data, const double t_downlo
         return NULL;
     }
 
-    int length = snprintf(NULL, 0, "%d, %s", t_data->id, t_data->host);
+    const char *country = t_data->country != NULL ? t_data->country : "Unknown";
+    const char *city = t_data->city != NULL ? t_data->city : "Unknown";
+    const char *provider = t_data->provider != NULL ? t_data->provider : "Unknown";
+    const char *host = t_data->host != NULL ? t_data->host : "Unknown";
+
+    int length = snprintf(
+        NULL,
+        0,
+        "Country: %s, city: %s, provider: %s, host: %s, id: %d",
+        country,
+        city,
+        provider,
+        host,
+        t_data->id
+    );
 
     if (length < 0) {
         cleanUpServerSpeedData(serverSpeedData);
         return NULL;
     }
 
-    serverSpeedData->serverData = malloc((size_t)length);
+    serverSpeedData->serverData = malloc((size_t)length + 1);
 
     if (serverSpeedData->serverData == NULL) {
         cleanUpServerSpeedData(serverSpeedData);
         return NULL;
     }
 
-    snprintf(serverSpeedData->serverData, (size_t)length,"%d, %s", t_data->id, t_data->host);
+    snprintf(
+        serverSpeedData->serverData,
+        (size_t)length + 1,
+        "Country: %s, city: %s, provider: %s, host: %s, id: %d",
+        country,
+        city,
+        provider,
+        host,
+        t_data->id
+    );
 
     serverSpeedData->downloadSpeed = t_downloadSpeed;
     serverSpeedData->uploadSpeed = t_uploadSpeed;

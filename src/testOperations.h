@@ -14,6 +14,7 @@ bool performDownloadTestOnSingleServer(const Config *t_config);
 bool performDownloadTestOnAllServers(const Config *t_config);
 bool performUploadTestOnSingleServer(const Config *t_config);
 bool performUploadTestOnAllServers(const Config *t_config);
+bool isServerInSearchCountry(const Config *t_config, const Data *t_data);
 bool shouldPrintServerData(const Config *t_config, const Data *t_data);
 
 double downloadSingleServer(const Config *t_config, const Data *t_data);

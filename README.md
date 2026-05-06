@@ -28,7 +28,7 @@ make clean
 - **`-d <ID>`** – Download test on a single server (specify server ID)
 - **`-u a`** – Upload test on all servers  
 - **`-u <ID>`** – Upload test on a single server (specify server ID)
-- **`-l <COUNTRY>`** – Search for best server in a specific country
+- **`-l <COUNTRY>`** – Test servers in a specific country, print their results, and report the best upload/download server
 - **`-c`** – Get your current location
 
 ### Examples

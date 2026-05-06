@@ -63,6 +63,14 @@ bool performUploadTestOnAllServers(const Config *t_config) {
     return t_config->uploadOperation == AllServers;
 }
 
+bool isServerInSearchCountry(const Config *t_config, const Data *t_data) {
+    if (t_config == NULL || t_data == NULL || t_config->searchCountry == NULL || t_data->country == NULL) {
+        return false;
+    }
+
+    return searchBestServerInCountry(t_config) && strcmp(t_config->searchCountry, t_data->country) == 0;
+}
+
 bool shouldPrintServerData(const Config *t_config, const Data *t_data) {
     if (t_config == NULL || t_data == NULL) {
         return false;
@@ -80,12 +88,7 @@ bool shouldPrintServerData(const Config *t_config, const Data *t_data) {
         return true;
     }
 
-    if (searchBestServerInCountry(t_config) && t_config->searchCountry != NULL && t_data->country != NULL &&
-        strcmp(t_config->searchCountry, t_data->country) == 0) {
-        return true;
-    }
-
-    return false;
+    return isServerInSearchCountry(t_config, t_data);
 }
 
 double downloadSingleServer(const Config *t_config, const Data *t_data) {
