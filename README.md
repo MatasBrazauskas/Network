@@ -4,6 +4,11 @@ A C program that tests download and upload speeds on network servers using libcu
 
 ## Build
 
+Make sure to create the `bin` directory first:
+```bash
+mkdir -p bin
+```
+Compile with:
 ```bash
 make
 ```
