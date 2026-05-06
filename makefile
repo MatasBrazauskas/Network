@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS = -g -Wall -Wextra -pedantic -O3 #-fsanitize=address
+CFLAGS = -g -Wall -Wextra -pedantic -O3
 LDLIBS = -lcjson -lcurl
 
 SRC = src/*.c
